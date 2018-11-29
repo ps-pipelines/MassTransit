@@ -14,7 +14,7 @@ namespace MassTransit.ActiveMqTransport.Topology
 {
     using System;
     using System.Collections.Generic;
-
+    using System.Linq;
 
     public sealed class ActiveMqHostEqualityComparer :
         IEqualityComparer<ActiveMqHostSettings>
@@ -31,16 +31,17 @@ namespace MassTransit.ActiveMqTransport.Topology
 
             if (ReferenceEquals(y, null))
                 return false;
-
-            return string.Equals(x.Host, y.Host, StringComparison.OrdinalIgnoreCase) && x.Port == y.Port;
+            //TODO: FO - Fix this - Compare the collections, not the first!!
+            return string.Equals(x.Nodes.FirstOrDefault().Host, y.Nodes.FirstOrDefault().Host, StringComparison.OrdinalIgnoreCase) && 
+                                 x.Nodes.FirstOrDefault().Port == y.Nodes.FirstOrDefault().Port;
         }
 
         public int GetHashCode(ActiveMqHostSettings obj)
         {
             unchecked
             {
-                var hashCode = obj.Host?.GetHashCode() ?? 0;
-                hashCode = (hashCode * 397) ^ obj.Port;
+                var hashCode = obj.Nodes.FirstOrDefault().Host?.GetHashCode() ?? 0;
+                hashCode = (hashCode * 397) ^ obj.Nodes.FirstOrDefault().Port;
                 return hashCode;
             }
         }

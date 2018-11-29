@@ -63,7 +63,7 @@ namespace MassTransit.ActiveMqTransport.Configurators
                 _settings.Port = 61617;
         }
 
-        public void UsePrimaryNodeFist()
+        public void UsePrimaryNodeFirst()
         {
             _settings.Randomize = false;
         }

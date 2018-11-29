@@ -67,12 +67,13 @@ namespace MassTransit.ActiveMqTransport.Transport
 
         void IProbeSite.Probe(ProbeContext context)
         {
+            //TODO: FO - probe things correctly.
             var scope = context.CreateScope("host");
             scope.Set(new
             {
                 Type = "ActiveMQ",
-                _settings.Host,
-                _settings.Port,
+                _settings.Nodes.FirstOrDefault().Host,
+                _settings.Nodes.FirstOrDefault().Port,
                 _settings.Username,
                 Password = new string('*', _settings.Password.Length)
             });

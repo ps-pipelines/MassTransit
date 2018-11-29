@@ -36,9 +36,6 @@ namespace MassTransit.ActiveMqTransport.Configurators
             _brokerAddress = new Lazy<Uri>(FormatBrokerAddress);
         }
 
-        public string Host { get; set; }
-        public int Port { get; set; }
-
         public IEnumerable<Node> Nodes { get; set; }
 
         public string Username { get; set; }
@@ -50,7 +47,7 @@ namespace MassTransit.ActiveMqTransport.Configurators
 
         public bool Randomize { get; set; } = true;
 
-                public IConnection CreateConnection()
+        public IConnection CreateConnection()
         {
             ITransport transport;
             if (Nodes.Count() > 1)
@@ -58,6 +55,7 @@ namespace MassTransit.ActiveMqTransport.Configurators
                 var failoverTransport = new FailoverTransportFactory();
                 transport = failoverTransport.CreateTransport(BrokerAddress);
             }
+
             if (UseSsl)
             {
                 var sslTransportFactory = new SslTransportFactory
@@ -92,8 +90,8 @@ namespace MassTransit.ActiveMqTransport.Configurators
             };
 
             return builder.Uri;
-     
-         
+
+
         }
 
         Uri FormatBrokerAddress()
