@@ -163,6 +163,7 @@ namespace MassTransit.ActiveMqTransport.Tests
 
         [Test]
         public async Task Should_succeed_and_connect_to_primary_queue_when_properly_configured_with_multiple_hosts_and_randomize(){
+            // Test comment
             TaskCompletionSource<bool> received = new TaskCompletionSource<bool>();
 
             Uri sendAddress = null;
