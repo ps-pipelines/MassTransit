@@ -28,6 +28,6 @@ namespace MassTransit.ActiveMqTransport
 
         void UseSsl();
         
-        void UsePrimaryNodeFist();
+        void UsePrimaryNodeFirst();
     }
 }
