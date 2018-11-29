@@ -36,9 +36,6 @@ namespace MassTransit.ActiveMqTransport.Configurators
             _brokerAddress = new Lazy<Uri>(FormatBrokerAddress);
         }
 
-        public string Host { get; set; }
-        public int Port { get; set; }
-
         public IEnumerable<Node> Nodes { get; set; }
 
         public string Username { get; set; }

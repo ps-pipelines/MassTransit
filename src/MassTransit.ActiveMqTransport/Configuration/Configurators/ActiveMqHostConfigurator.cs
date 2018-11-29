@@ -25,14 +25,22 @@ namespace MassTransit.ActiveMqTransport.Configurators
             if (string.Compare("activemq", address.Scheme, StringComparison.OrdinalIgnoreCase) != 0)
                 throw new ActiveMqTransportConfigurationException($"The address scheme was invalid: {address.Scheme}");
 
+
+            var port = !address.IsDefaultPort ? address.Port : 61616;
+
             _settings = new ConfigurationHostSettings
             {
-                Host = address.Host,
+                Nodes = new []
+                {
+                    new Node()
+                    {
+                        Host = address.Host,
+                        Port = port
+                    }
+                },
                 Username = "",
                 Password = "",
             };
-
-            _settings.Port = !address.IsDefaultPort ? address.Port : 61616;
 
             if (!string.IsNullOrEmpty(address.UserInfo))
             {
@@ -59,8 +67,12 @@ namespace MassTransit.ActiveMqTransport.Configurators
         public void UseSsl()
         {
             _settings.UseSsl = true;
-            if (_settings.Port == 61616)
-                _settings.Port = 61617;
+
+            foreach (var node in _settings.Nodes)
+            {
+                if (node.Port == 61616)
+                    node.Port = 61617;    
+            }
         }
 
         public void UsePrimaryNodeFist()
