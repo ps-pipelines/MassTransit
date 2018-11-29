@@ -162,7 +162,7 @@ namespace MassTransit.ActiveMqTransport.Tests
         }
 
         [Test]
-        public async Task Should_succeed_and_connect_to_primary_queue_when_properly_configured_with_multiple_hosts(){
+        public async Task Should_succeed_and_connect_to_primary_queue_when_properly_configured_with_multiple_hosts_and_randomize(){
             TaskCompletionSource<bool> received = new TaskCompletionSource<bool>();
 
             Uri sendAddress = null;
@@ -178,6 +178,54 @@ namespace MassTransit.ActiveMqTransport.Tests
                     h.Password("build-Br0k3r");
                     h.UseSsl();
                     h.UsePrimaryNodeFirst();
+                });
+
+                cfg.ReceiveEndpoint(host, "input-queue", x =>
+                {
+                    x.Handler<PingMessage>(async context =>
+                    {
+                        await context.Publish(new PongMessage(context.Message.CorrelationId));
+                    });
+
+                    sendAddress = x.InputAddress;
+                });
+
+                cfg.ReceiveEndpoint(host, "input-queue-too", x =>
+                {
+                    x.Handler<PongMessage>(async context =>
+                    {
+                        received.TrySetResult(true);
+                    });
+                });
+            });
+
+            await busControl.StartAsync();
+
+            var sendEndpoint = await busControl.GetSendEndpoint(sendAddress);
+
+            await sendEndpoint.Send(new PingMessage());
+
+            await received.Task.UntilCompletedOrTimeout(TimeSpan.FromSeconds(5));
+
+            await busControl.StopAsync();
+        }
+
+        [Test]
+        public async Task Should_succeed_and_connect_to_a_queue_when_properly_configured_with_multiple_hosts(){
+            TaskCompletionSource<bool> received = new TaskCompletionSource<bool>();
+
+            Uri sendAddress = null;
+
+            var busControl = Bus.Factory.CreateUsingActiveMq(cfg =>
+            {
+                var host = cfg.Host(new List<Uri>{
+                    new Uri("b-15a8b984-a883-4143-a4e7-8f97bc5db37d-1.mq.us-east-2.amazonaws.com")
+                    }, 
+                    h =>
+                {
+                    h.Username("masstransit-build");
+                    h.Password("build-Br0k3r");
+                    h.UseSsl();
                 });
 
                 cfg.ReceiveEndpoint(host, "input-queue", x =>
