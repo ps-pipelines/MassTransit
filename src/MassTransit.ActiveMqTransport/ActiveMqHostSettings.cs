@@ -13,6 +13,7 @@
 namespace MassTransit.ActiveMqTransport
 {
     using System;
+    using System.Collections.Generic;
     using Apache.NMS;
 
 
@@ -22,15 +23,10 @@ namespace MassTransit.ActiveMqTransport
     public interface ActiveMqHostSettings
     {
         /// <summary>
-        ///     The ActiveMQ host to connect to (should be a valid hostname)
+        ///  ActiveMq Hosts/Nodes
         /// </summary>
-        string Host { get; }
-
-        /// <summary>
-        ///     The ActiveMQ port to connect
-        /// </summary>
-        int Port { get; }
-
+        IEnumerable<Node> Nodes { get; }
+    
         /// <summary>
         ///     The Username for connecting to the host
         /// </summary>
@@ -52,5 +48,19 @@ namespace MassTransit.ActiveMqTransport
         Uri BrokerAddress { get; }
 
         IConnection CreateConnection();
+    }
+
+
+    public class Node
+    {
+        /// <summary>
+        ///     The ActiveMQ host to connect to (should be a valid hostname)
+        /// </summary>
+        public string Host { get; set; }
+
+        /// <summary>
+        ///     The ActiveMQ port to connect
+        /// </summary>
+        public int Port { get; set; }
     }
 }

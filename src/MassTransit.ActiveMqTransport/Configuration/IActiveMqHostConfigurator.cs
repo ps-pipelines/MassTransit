@@ -27,5 +27,7 @@ namespace MassTransit.ActiveMqTransport
         void Password(string password);
 
         void UseSsl();
+        
+        void UsePrimaryNodeFist();
     }
 }

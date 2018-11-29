@@ -13,9 +13,12 @@
 namespace MassTransit.ActiveMqTransport.Configurators
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using Apache.NMS;
     using Apache.NMS.ActiveMQ;
     using Apache.NMS.ActiveMQ.Transport;
+    using Apache.NMS.ActiveMQ.Transport.Failover;
     using Apache.NMS.ActiveMQ.Transport.Tcp;
     using Apache.NMS.ActiveMQ.Util;
 
@@ -34,6 +37,9 @@ namespace MassTransit.ActiveMqTransport.Configurators
 
         public string Host { get; set; }
         public int Port { get; set; }
+
+        public IEnumerable<Node> Nodes { get; set; }
+
         public string Username { get; set; }
         public string Password { get; set; }
         public bool UseSsl { get; set; }
@@ -41,9 +47,16 @@ namespace MassTransit.ActiveMqTransport.Configurators
         public Uri HostAddress => _hostAddress.Value;
         public Uri BrokerAddress => _brokerAddress.Value;
 
-        public IConnection CreateConnection()
+        public bool Randomize { get; set; } = true;
+
+                public IConnection CreateConnection()
         {
             ITransport transport;
+            if (Nodes.Count() > 1)
+            {
+                var failoverTransport = new FailoverTransportFactory();
+                transport = failoverTransport.CreateTransport(BrokerAddress);
+            }
             if (UseSsl)
             {
                 var sslTransportFactory = new SslTransportFactory
@@ -67,39 +80,60 @@ namespace MassTransit.ActiveMqTransport.Configurators
 
         Uri FormatHostAddress()
         {
+            //TODO confirm if we need to supply the failover uri for this.
+            var node = Nodes.First();
             var builder = new UriBuilder
             {
                 Scheme = "activemq",
-                Host = Host,
-                Port = Port,
+                Host = node.Host,
+                Port = node.Port,
                 Path = "/"
             };
 
             return builder.Uri;
+     
+         
         }
 
         Uri FormatBrokerAddress()
         {
-            // create broker URI: http://activemq.apache.org/nms/activemq-uri-configuration.html
-            var builder = new UriBuilder
-            {
-                Scheme = UseSsl ? "ssl" : "tcp",
-                Host = Host,
-                Port = Port,
-                Query = "wireFormat.tightEncodingEnabled=true&nms.AsyncSend=true"
-            };
 
-            return builder.Uri;
+            var query = "wireFormat.tightEncodingEnabled=true&nms.AsyncSend=true";
+            var scheme = UseSsl ? "ssl" : "tcp";
+
+            if (Nodes.Count() == 1)
+            {
+                var node = Nodes.First();
+                // create broker URI: http://activemq.apache.org/nms/activemq-uri-configuration.html
+                var builder = new UriBuilder
+                {
+                    Scheme = scheme,
+                    Host = node.Host,
+                    Port = node.Port,
+                    Query = query
+                };
+
+                return builder.Uri;
+            }
+
+            {
+                // create cluster broker URI: http://activemq.apache.org/failover-transport-reference.html
+                var hosts = string.Join(",", Nodes.Select(x => $"{scheme}://{x.Host}:{x.Port}"));
+                query += $"&randomize={Randomize.ToString().ToLower(CultureInfo.InvariantCulture)}";
+                var builder = new UriBuilder
+                {
+                    Scheme = "failover",
+                    Host = $"({hosts})",
+                    Query = query
+                };
+
+                return builder.Uri;
+            }
         }
 
         public override string ToString()
         {
-            return new UriBuilder
-            {
-                Scheme = UseSsl ? "ssl" : "tcp",
-                Host = Host,
-                Port = Port
-            }.Uri.ToString();
+            return FormatBrokerAddress().ToString();
         }
     }
 }
