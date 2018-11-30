@@ -171,8 +171,9 @@ namespace MassTransit.ActiveMqTransport.Tests
 
             var busControl = Bus.Factory.CreateUsingActiveMq(cfg =>
             {
+
                 var host = cfg.Host(new List<Uri>{
-                    new Uri("b-15a8b984-a883-4143-a4e7-8f97bc5db37d-1.mq.us-east-2.amazonaws.com")
+                    new UriBuilder("activemq", "b-15a8b984-a883-4143-a4e7-8f97bc5db37d-1.mq.us-east-2.amazonaws.com", 61616).Uri
                     }, 
                     h =>
                 {
@@ -221,7 +222,7 @@ namespace MassTransit.ActiveMqTransport.Tests
             var busControl = Bus.Factory.CreateUsingActiveMq(cfg =>
             {
                 var host = cfg.Host(new List<Uri>{
-                    new Uri("b-15a8b984-a883-4143-a4e7-8f97bc5db37d-1.mq.us-east-2.amazonaws.com")
+                        new UriBuilder("activemq", "b-15a8b984-a883-4143-a4e7-8f97bc5db37d-1.mq.us-east-2.amazonaws.com", 61616).Uri
                     }, 
                     h =>
                 {
