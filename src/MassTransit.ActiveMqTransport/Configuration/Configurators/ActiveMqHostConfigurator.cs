@@ -13,6 +13,8 @@
 namespace MassTransit.ActiveMqTransport.Configurators
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
 
 
     public class ActiveMqHostConfigurator :
@@ -51,6 +53,32 @@ namespace MassTransit.ActiveMqTransport.Configurators
                     _settings.Password = parts[1];
             }
         }
+
+        public ActiveMqHostConfigurator(IEnumerable<Uri> addresses)
+        {
+            var invalidAddressses = addresses.Where(a => string.Compare("activemq", a.Scheme, StringComparison.OrdinalIgnoreCase) != 0);
+
+            if (invalidAddressses.Any())
+                throw new ActiveMqTransportConfigurationException($"The address scheme was invalid: {invalidAddressses.Select(x => x.Scheme)}");
+
+            _settings = new ConfigurationHostSettings
+            {
+                Nodes = addresses.Select(x => new Node {Host = x.Host, Port = x.Port}),
+                Username = "",
+                Password = ""
+            };
+
+            if (!string.IsNullOrEmpty(addresses.FirstOrDefault()?.UserInfo))
+            {
+                var parts = addresses.FirstOrDefault().UserInfo.Split(':');
+                _settings.Username = parts[0];
+
+                if (parts.Length >= 2)
+                    _settings.Password = parts[1];
+
+            }
+        }
+
 
         public ActiveMqHostSettings Settings => _settings;
 
