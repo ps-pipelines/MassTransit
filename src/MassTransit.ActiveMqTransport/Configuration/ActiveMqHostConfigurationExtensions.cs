@@ -13,11 +13,25 @@
 namespace MassTransit.ActiveMqTransport
 {
     using System;
+    using System.Collections.Generic;
     using Configurators;
 
 
     public static class ActiveMqHostConfigurationExtensions
     {
+
+        public static IActiveMqHost Host(this IActiveMqBusFactoryConfigurator configurator, IEnumerable<Uri> hostAddresses, Action<IActiveMqHostConfigurator> configure)
+        {
+            if (hostAddresses == null)
+                throw new ArgumentNullException(nameof(hostAddresses));
+
+            var hostConfigurator = new ActiveMqHostConfigurator(hostAddresses);
+
+            configure(hostConfigurator);
+            return configurator.Host(hostConfigurator.Settings);
+        }
+
+
         /// <summary>
         ///     Configure a ActiveMQ host using the configuration API
         /// </summary>
