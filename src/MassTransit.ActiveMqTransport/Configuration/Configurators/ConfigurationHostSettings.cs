@@ -128,16 +128,7 @@ namespace MassTransit.ActiveMqTransport.Configurators
                     .Select(builder => builder.Uri)
                     .ToList();
 
-                //var hosts = string.Join(",", Nodes.Select(x => $"{scheme}://{x.Host}:{x.Port}"));
-                //query += $"&randomize={Randomize.ToString().ToLower(CultureInfo.InvariantCulture)}";
-                //var builder = new UriBuilder
-                //{
-                //    Scheme = "failover",
-                //    Host = $"({hosts})",
-                //    Query = query
-                //};
-
-                var returnUri = new Uri($"failover:({string.Join(",", hosts.Select(x => $"{x.AbsoluteUri}"))})?randomize={ Randomize.ToString().ToLower(CultureInfo.InvariantCulture) }");
+                var returnUri = new Uri($"failover:({string.Join(",", hosts.Select(x => $"{x.AbsoluteUri}"))})?{query}&randomize={ Randomize.ToString().ToLower(CultureInfo.InvariantCulture) }");
                 return returnUri;
             }
         }
