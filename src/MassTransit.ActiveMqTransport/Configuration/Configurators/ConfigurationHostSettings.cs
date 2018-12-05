@@ -117,16 +117,28 @@ namespace MassTransit.ActiveMqTransport.Configurators
 
             {
                 // create cluster broker URI: http://activemq.apache.org/failover-transport-reference.html
-                var hosts = string.Join(",", Nodes.Select(x => $"{scheme}://{x.Host}:{x.Port}"));
-                query += $"&randomize={Randomize.ToString().ToLower(CultureInfo.InvariantCulture)}";
-                var builder = new UriBuilder
-                {
-                    Scheme = "failover",
-                    Host = $"({hosts})",
-                    Query = query
-                };
+                //
 
-                return builder.Uri;
+                var hosts = Nodes.Select(node => new UriBuilder()
+                    {
+                        Scheme = scheme,
+                        Host = node.Host,
+                        Port = node.Port
+                    })
+                    .Select(builder => builder.Uri)
+                    .ToList();
+
+                //var hosts = string.Join(",", Nodes.Select(x => $"{scheme}://{x.Host}:{x.Port}"));
+                //query += $"&randomize={Randomize.ToString().ToLower(CultureInfo.InvariantCulture)}";
+                //var builder = new UriBuilder
+                //{
+                //    Scheme = "failover",
+                //    Host = $"({hosts})",
+                //    Query = query
+                //};
+
+                var returnUri = new Uri($"failover:({string.Join(",", hosts.Select(x => $"{x.AbsoluteUri}"))})?randomize={ Randomize.ToString().ToLower(CultureInfo.InvariantCulture) }");
+                return returnUri;
             }
         }
 
