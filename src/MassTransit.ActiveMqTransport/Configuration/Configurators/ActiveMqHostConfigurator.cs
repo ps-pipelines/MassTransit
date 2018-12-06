@@ -23,62 +23,40 @@ namespace MassTransit.ActiveMqTransport.Configurators
         readonly ConfigurationHostSettings _settings;
 
         public ActiveMqHostConfigurator(Uri address)
+            : this(new[] {address})
         {
-            if (string.Compare("activemq", address.Scheme, StringComparison.OrdinalIgnoreCase) != 0)
-                throw new ActiveMqTransportConfigurationException($"The address scheme was invalid: {address.Scheme}");
-
-
-            var port = !address.IsDefaultPort ? address.Port : 61616;
-
-            _settings = new ConfigurationHostSettings
-            {
-                Nodes = new []
-                {
-                    new Node()
-                    {
-                        Host = address.Host,
-                        Port = port
-                    }
-                },
-                Username = "",
-                Password = "",
-            };
-
-            if (!string.IsNullOrEmpty(address.UserInfo))
-            {
-                string[] parts = address.UserInfo.Split(':');
-                _settings.Username = parts[0];
-
-                if (parts.Length >= 2)
-                    _settings.Password = parts[1];
-            }
         }
 
         public ActiveMqHostConfigurator(IEnumerable<Uri> addresses)
         {
-            var invalidAddressses = addresses.Where(a => string.Compare("activemq", a.Scheme, StringComparison.OrdinalIgnoreCase) != 0);
+            IEnumerable<string> invalidSchemes = addresses.Select(address => address.Scheme)
+                .Where(scheme => string.Compare("activemq", scheme, StringComparison.OrdinalIgnoreCase) != 0)
+                .Distinct();
 
-            if (invalidAddressses.Any())
-                throw new ActiveMqTransportConfigurationException($"The address scheme was invalid: {invalidAddressses.Select(x => x.Scheme)}");
+            if (invalidSchemes.Any())
+                throw new ActiveMqTransportConfigurationException($"The address scheme was invalid: {string.Join(",", invalidSchemes)}");
 
             _settings = new ConfigurationHostSettings
             {
-                Nodes = addresses.Select(x => new Node {Host = x.Host, Port = x.Port}),
+                Nodes = addresses.Select(address => new Node
+                {
+                    Host = address.Host,
+                    Port = !address.IsDefaultPort ? address.Port : 61616
+                }).ToArray(),
                 Username = "",
                 Password = ""
             };
 
-            if (!string.IsNullOrEmpty(addresses.FirstOrDefault()?.UserInfo))
+            string userInfo = addresses.FirstOrDefault()?.UserInfo;
+            if (!string.IsNullOrEmpty(userInfo))
             {
-                var parts = addresses.FirstOrDefault().UserInfo.Split(':');
+                string[] parts = userInfo.Split(':');
                 _settings.Username = parts[0];
 
                 if (parts.Length >= 2)
                     _settings.Password = parts[1];
-
             }
         }
-
 
         public ActiveMqHostSettings Settings => _settings;
 
@@ -95,7 +73,6 @@ namespace MassTransit.ActiveMqTransport.Configurators
         public void UseSsl()
         {
             _settings.UseSsl = true;
-
             foreach (var node in _settings.Nodes)
             {
                 if (node.Port == 61616)

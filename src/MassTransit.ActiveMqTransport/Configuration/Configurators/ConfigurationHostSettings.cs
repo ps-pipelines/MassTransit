@@ -111,9 +111,11 @@ namespace MassTransit.ActiveMqTransport.Configurators
             // _OR_
             // create cluster broker URI: http://activemq.apache.org/failover-transport-reference.html
 
+            var scheme = UseSsl ? "ssl" : "tcp";
+            
             var builders = Nodes.Select(node => new UriBuilder
             {
-                Scheme = UseSsl ? "ssl" : "tcp",
+                Scheme = scheme,
                 Host = node.Host,
                 Port = node.Port,
                 Query = query
