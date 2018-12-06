@@ -16,6 +16,7 @@ namespace MassTransit.ActiveMqTransport.Configurators
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Security.Authentication;
     using Apache.NMS;
     using Apache.NMS.ActiveMQ;
     using Apache.NMS.ActiveMQ.Transport;
@@ -55,19 +56,21 @@ namespace MassTransit.ActiveMqTransport.Configurators
                 var failoverTransport = new FailoverTransportFactory();
                 transport = failoverTransport.CreateTransport(BrokerAddress);
             }
-
-            if (UseSsl)
-            {
-                var sslTransportFactory = new SslTransportFactory
-                {
-                    SslProtocol = "Tls"
-                };
-
-                transport = sslTransportFactory.CreateTransport(BrokerAddress);
-            }
             else
             {
-                transport = TransportFactory.CreateTransport(BrokerAddress);
+                if (UseSsl)
+                {
+                    var sslTransportFactory = new SslTransportFactory
+                    {
+                        SslProtocol = SslProtocols.Tls.ToString()
+                    };
+    
+                    transport = sslTransportFactory.CreateTransport(BrokerAddress);
+                }
+                else
+                {
+                    transport = TransportFactory.CreateTransport(BrokerAddress);
+                }
             }
 
             return new Connection(BrokerAddress, transport, new IdGenerator())
@@ -90,52 +93,42 @@ namespace MassTransit.ActiveMqTransport.Configurators
             };
 
             return builder.Uri;
-
-
         }
 
         Uri FormatBrokerAddress()
         {
-
-            var query = "wireFormat.tightEncodingEnabled=true&nms.AsyncSend=true";
-            var scheme = UseSsl ? "ssl" : "tcp";
-
-            if (Nodes.Count() == 1)
-            {
-                var node = Nodes.First();
-                // create broker URI: http://activemq.apache.org/nms/activemq-uri-configuration.html
-                var builder = new UriBuilder
-                {
-                    Scheme = scheme,
-                    Host = node.Host,
-                    Port = node.Port,
-                    Query = query
-                };
-
-                return builder.Uri;
-            }
-
-            {
-                // create cluster broker URI: http://activemq.apache.org/failover-transport-reference.html
-                //
-
-                var hosts = Nodes.Select(node => new UriBuilder()
-                    {
-                        Scheme = scheme,
-                        Host = node.Host,
-                        Port = node.Port
-                    })
-                    .Select(builder => builder.Uri)
-                    .ToList();
-
-                var returnUri = new Uri($"failover:({string.Join(",", hosts.Select(x => $"{x.AbsoluteUri}"))})?{query}&randomize={ Randomize.ToString().ToLower(CultureInfo.InvariantCulture) }");
-                return returnUri;
-            }
+            return BuildBrokerUris("wireFormat.tightEncodingEnabled=true&nms.AsyncSend=true");
         }
 
         public override string ToString()
         {
-            return FormatBrokerAddress().ToString();
+            return BuildBrokerUris(String.Empty).ToString();
+        }
+
+        private Uri BuildBrokerUris(string query)
+        {
+            // create broker URI: http://activemq.apache.org/nms/activemq-uri-configuration.html
+            // _OR_
+            // create cluster broker URI: http://activemq.apache.org/failover-transport-reference.html
+
+            var builders = Nodes.Select(node => new UriBuilder
+            {
+                Scheme = UseSsl ? "ssl" : "tcp",
+                Host = node.Host,
+                Port = node.Port,
+                Query = query
+            });
+
+            if (Nodes.Count() == 1)
+            {
+                return builders.Single().Uri;
+            }
+            else
+            {
+                var urisJoined = String.Join(",", builders.Select(builder => builder.Uri.AbsoluteUri));
+                var randomize = Randomize.ToString().ToLower(CultureInfo.InvariantCulture);
+                return new Uri($"failover:({urisJoined})?randomize={randomize}");
+            }
         }
     }
 }
